@@ -1,9 +1,48 @@
+import { useEffect } from "react";
+
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { useApiClient } from "@/hooks/useApiClient";
+import { getAllPosts } from "@/services/postsService";
 import { useAuth } from "../../context/AuthContext";
 
 export default function HomeScreen() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const { request } = useApiClient();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function testGetAllPosts() {
+      if (user?.role !== "PROFESSOR") {
+        console.warn("O endpoint /posts/all exige um usuário professor.");
+        return;
+      }
+
+      try {
+        const posts = await getAllPosts(request);
+
+        if (cancelled) {
+          return;
+        }
+
+        console.log("Publicações recebidas:", posts);
+        console.log("Quantidade de publicações:", posts.length);
+      } catch (error: unknown) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error("Erro ao consultar as publicações:", error);
+      }
+    }
+
+    void testGetAllPosts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [request, user?.role]);
 
   async function handleLogout() {
     await logout();
@@ -13,7 +52,9 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>EduBlog</Text>
 
-      <Text style={styles.text}>Usuário autenticado.</Text>
+      <Text style={styles.text}>Usuário autenticado: {user?.name}</Text>
+
+      <Text style={styles.text}>Perfil: {user?.role}</Text>
 
       <Pressable
         onPress={handleLogout}

@@ -10,9 +10,11 @@ export interface IJwtPayload {
 }
 
 export interface IAuthUser {
-  id?: string;
-  email?: string;
-  role?: UserRole;
+  id: string;
+  email: string;
+  name: string;
+  username: string;
+  role: UserRole;
 }
 
 export interface IAuthContextData {
@@ -26,4 +28,9 @@ export interface IAuthContextData {
 
 export interface IAuthProviderProps {
   children: ReactNode;
+}
+
+export interface IAuthSession {
+  token: string;
+  user: IAuthUser;
 }

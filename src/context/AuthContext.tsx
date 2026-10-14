@@ -1,20 +1,21 @@
+import * as SecureStore from "expo-secure-store";
+import { jwtDecode, JwtPayload } from "jwt-decode";
+import { createContext, useContext, useEffect, useState } from "react";
+
 import {
   IAuthContextData,
   IAuthProviderProps,
+  IAuthSession,
   IAuthUser,
-  IJwtPayload,
 } from "@/interfaces/IAuth";
 import { UserRole } from "@/types/UserRole";
-import * as SecureStore from "expo-secure-store";
-import { jwtDecode } from "jwt-decode";
-import { createContext, useContext, useEffect, useState } from "react";
 import { authService } from "../services/authService";
 
-const TOKEN_KEY = "edublog_token";
+const SESSION_KEY = "edublog_session";
 
 const AuthContext = createContext<IAuthContextData | undefined>(undefined);
 
-function normalizeRole(role?: string): UserRole | undefined {
+function normalizeRole(role: string): UserRole | undefined {
   if (role === "PROFESSOR") {
     return "PROFESSOR";
   }
@@ -26,14 +27,14 @@ function normalizeRole(role?: string): UserRole | undefined {
   return undefined;
 }
 
-function decodeUser(token: string): IAuthUser {
-  const payload = jwtDecode<IJwtPayload>(token);
+function isTokenExpired(token: string): boolean {
+  const payload = jwtDecode<JwtPayload>(token);
 
-  return {
-    id: payload.sub,
-    email: payload.email,
-    role: normalizeRole(payload.role),
-  };
+  if (!payload.exp) {
+    return true;
+  }
+
+  return payload.exp * 1000 <= Date.now();
 }
 
 export function AuthProvider({ children }: IAuthProviderProps) {
@@ -44,20 +45,26 @@ export function AuthProvider({ children }: IAuthProviderProps) {
   useEffect(() => {
     async function restoreSession() {
       try {
-        const storedToken = await SecureStore.getItemAsync(TOKEN_KEY);
+        const storedSession = await SecureStore.getItemAsync(SESSION_KEY);
 
-        if (!storedToken) {
+        if (!storedSession) {
           return;
         }
 
-        const decodedUser = decodeUser(storedToken);
+        const session: IAuthSession = JSON.parse(storedSession);
 
-        setToken(storedToken);
-        setUser(decodedUser);
+        if (!session.token || !session.user || isTokenExpired(session.token)) {
+          await SecureStore.deleteItemAsync(SESSION_KEY);
+
+          return;
+        }
+
+        setToken(session.token);
+        setUser(session.user);
       } catch (error) {
         console.error("Não foi possível restaurar a sessão:", error);
 
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await SecureStore.deleteItemAsync(SESSION_KEY);
       } finally {
         setIsLoading(false);
       }
@@ -69,16 +76,33 @@ export function AuthProvider({ children }: IAuthProviderProps) {
   async function login(email: string, password: string): Promise<void> {
     const response = await authService.login(email, password);
 
-    const decodedUser = decodeUser(response.token);
+    const normalizedRole = normalizeRole(response.user.role);
 
-    await SecureStore.setItemAsync(TOKEN_KEY, response.token);
+    if (!normalizedRole) {
+      throw new Error("O perfil retornado pela API é inválido.");
+    }
+
+    const authenticatedUser: IAuthUser = {
+      id: response.user.id,
+      email: response.user.email,
+      name: response.user.name,
+      role: normalizedRole,
+      username: response.user.username,
+    };
+
+    const session: IAuthSession = {
+      token: response.token,
+      user: authenticatedUser,
+    };
+
+    await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(session));
 
     setToken(response.token);
-    setUser(decodedUser);
+    setUser(authenticatedUser);
   }
 
   async function logout(): Promise<void> {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(SESSION_KEY);
 
     setToken(null);
     setUser(null);

@@ -13,10 +13,6 @@ export interface ILoginResponse {
   };
 }
 
-export interface ILoginErrorResponse {
-  message?: string;
-}
-
 export interface IApiError {
   message?: string;
   status?: number;
