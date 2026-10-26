@@ -1,15 +1,21 @@
-## Execução do EduBlog Mobile
+![EduBlog](./assets/images/eduBlog-logo.png)
 
-O **EduBlog Mobile** foi desenvolvido com **React Native + TypeScript + Expo**. Durante o desenvolvimento, utilizamos o **Expo Go** em um dispositivo Android físico, evitando a necessidade de instalar um emulador.
+# EduBlog Mobile
 
-### Pré-requisitos
+O **EduBlog Mobile** foi desenvolvido com **React Native, TypeScript e Expo**. Durante o desenvolvimento, utilizamos o **Expo Go** em um dispositivo Android físico, evitando a necessidade de instalar um emulador.
 
-- Node.js instalado;
+O projeto utiliza o **Expo SDK 58**. Para executar a aplicação no dispositivo físico, a versão do Expo Go instalada no celular precisa ser compatível com esse SDK.
+
+## Pré-requisitos
+
+- Node.js compatível com o Expo SDK 58;
 - npm;
-- aplicativo **Expo Go** no celular;
-- computador e celular conectados à mesma rede quando utilizada a conexão LAN.
+- aplicativo **Expo Go compatível com o SDK 58** instalado no celular;
+- conexão com a internet;
+- computador e celular conectados à mesma rede quando utilizada a conexão LAN;
+- firewall configurado para permitir a comunicação local, quando necessária.
 
-### Instalação
+## Instalação
 
 Clone o repositório e instale as dependências:
 
@@ -19,7 +25,27 @@ cd edublog-mobie
 npm install
 ```
 
-O projeto utiliza o Expo SDK 57 e a versão do Expo Go deve ser compatível com esse SDK.
+Depois da instalação, verifique se as dependências estão alinhadas com a versão do Expo:
+
+```bash
+npx expo install --check
+```
+
+O projeto utiliza o Expo SDK 58. Caso seja necessário instalar ou atualizar dependências, consulte o procedimento de atualização do SDK antes de alterar versões manualmente.
+
+## Configuração da API
+
+A aplicação utiliza a variável de ambiente `EXPO_PUBLIC_API_URL` para definir o endereço da API REST do EduBlog.
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+EXPO_PUBLIC_API_URL=https://blog-api-dnfx.onrender.com
+```
+
+A variável deve utilizar o prefixo `EXPO_PUBLIC_` para estar disponível no código do aplicativo Expo.
+
+**Importante:** não armazene senhas, tokens privados ou chaves secretas em variáveis `EXPO_PUBLIC_*`, pois seus valores podem ser incluídos no aplicativo cliente.
 
 ---
 
@@ -33,13 +59,13 @@ Para iniciar o Expo normalmente:
 npm start
 ```
 
-ou:
+Ou, alternativamente:
 
 ```bash
 npx expo start
 ```
 
-O Expo exibirá um QR Code no terminal.
+O Expo iniciará o Metro Bundler e exibirá um QR Code no terminal.
 
 Abra o **Expo Go** no celular e escaneie o QR Code.
 
@@ -52,32 +78,40 @@ Wi-Fi
    ↓
 Computador
    ↓
-Expo / Metro
+Expo / Metro Bundler
 ```
 
-Quando a conexão LAN funciona, essa é a opção preferencial por não depender de um serviço externo de Tunnel.
+Quando a conexão LAN funciona corretamente, essa é uma opção preferencial por não depender de um serviço externo de Tunnel.
+
+### Como funciona a conexão LAN
+
+Na conexão LAN, o celular precisa conseguir acessar o servidor de desenvolvimento executado no computador. Os dois dispositivos devem estar na mesma rede local, e o roteador e o firewall não podem impedir essa comunicação.
+
+Se o aplicativo não conseguir carregar o projeto, verifique o endereço de rede mostrado pelo Expo, a configuração do firewall e a conectividade entre os dispositivos.
 
 ---
 
 ## Tunnel — alternativa para problemas de rede
 
-Caso o Expo Go fique carregando ou o celular não consiga acessar o computador pela rede local, o projeto possui uma opção de **Tunnel**.
+Caso o Expo Go fique carregando ou o celular não consiga acessar o computador pela rede local, o projeto possui suporte à conexão por Tunnel.
 
-O suporte utilizado pelo projeto é:
+O projeto utiliza a dependência `@expo/ngrok` instalada localmente:
 
 ```bash
 npm install -D @expo/ngrok@4.1.3
 ```
 
-A dependência fica instalada no próprio projeto, sendo registrada no `package.json` e no `package-lock.json`.
+Essa dependência deve permanecer registrada no `package.json` e no `package-lock.json`, evitando a necessidade de instalação global para esse projeto.
 
-Para iniciar usando Tunnel:
+### Tentativa de conexão pelo Tunnel
+
+O comando configurado inicialmente no projeto é:
 
 ```bash
 npm run start:tunnel
 ```
 
-Script correspondente no `package.json`:
+O script correspondente no `package.json` é:
 
 ```json
 {
@@ -88,30 +122,62 @@ Script correspondente no `package.json`:
 }
 ```
 
-Nesse modo, a comunicação ocorre por meio do serviço de Tunnel:
+Se o túnel padrão não conseguir criar uma URL assinada, o próprio Expo poderá sugerir o uso da alternativa com ngrok:
+
+```bash
+npx expo start --tunnel ngrok
+```
+
+Essa alternativa deve ser testada no ambiente antes de ser considerada funcional.
+
+Se o comando alternativo funcionar e for adotado definitivamente, o script `start:tunnel` poderá ser atualizado para:
+
+```json
+{
+  "scripts": {
+    "start": "expo start",
+    "start:tunnel": "expo start --tunnel ngrok"
+  }
+}
+```
+
+Após essa alteração, a inicialização poderá continuar sendo realizada pelo comando habitual:
+
+```bash
+npm run start:tunnel
+```
+
+### Como funciona a conexão Tunnel
+
+Nesse modo, a comunicação utiliza um serviço de túnel para conectar o celular ao servidor de desenvolvimento:
 
 ```text
 Celular
    ↓
 Internet
    ↓
-Tunnel / Ngrok
+Serviço Tunnel / ngrok
    ↓
 Computador
    ↓
-Expo / Metro
+Expo / Metro Bundler
 ```
 
-O Tunnel é utilizado **somente durante o desenvolvimento** e não faz parte do aplicativo final.
+O Tunnel é utilizado **somente durante o desenvolvimento**. Ele não faz parte do aplicativo final distribuído aos usuários.
+
+A disponibilidade depende do serviço externo, da conexão com a internet e da configuração do Expo.
 
 ### LAN ou Tunnel?
 
-| Comando                | Uso                                           |
-| ---------------------- | --------------------------------------------- |
-| `npm start`            | Execução normal pela rede local               |
-| `npm run start:tunnel` | Alternativa quando a conexão LAN não funciona |
+| Comando                         | Uso                                                                 |
+| ------------------------------- | ------------------------------------------------------------------- |
+| `npm start`                     | Execução normal pela rede local                                     |
+| `npm run start:tunnel`          | Inicialização pelo Tunnel, conforme o script configurado            |
+| `npx expo start --tunnel ngrok` | Alternativa usando ngrok, quando necessária e funcional no ambiente |
 
-A conexão LAN normalmente apresenta melhor desempenho. O Tunnel é uma alternativa útil para redes com restrições de firewall, roteador ou isolamento entre dispositivos.
+A conexão LAN normalmente apresenta melhor desempenho por utilizar a rede local diretamente. O Tunnel é uma alternativa útil quando existem restrições de firewall, roteador ou isolamento entre dispositivos.
+
+**Atenção:** a URL do túnel pode permitir acesso ao servidor de desenvolvimento a quem a conhecer. Não compartilhe o QR Code publicamente e encerre o servidor quando terminar os testes.
 
 ---
 
@@ -119,40 +185,50 @@ A conexão LAN normalmente apresenta melhor desempenho. O Tunnel é uma alternat
 
 Se o Expo Go ficar indefinidamente em **"carregando"**, verifique primeiro:
 
-1. O celular e o computador estão na mesma rede Wi-Fi.
-2. O Expo está em execução no computador.
-3. O Expo Go é compatível com o SDK utilizado pelo projeto.
-4. O Firewall do Windows não está bloqueando a comunicação local.
+1. Se o celular e o computador estão na mesma rede Wi-Fi, quando utilizada a conexão LAN.
+2. Se o servidor do Expo está em execução no computador.
+3. Se a versão do Expo Go é compatível com o SDK utilizado pelo projeto.
+4. Se o firewall do Windows não está bloqueando a comunicação.
+5. Se o roteador permite comunicação entre os dispositivos conectados.
+6. Se as dependências do projeto foram instaladas corretamente.
 
-Também é possível testar diretamente no navegador do celular:
+### Teste de conectividade pela rede local
+
+Também é possível testar o endereço do Metro Bundler no navegador do celular:
 
 ```text
 http://IP_DO_COMPUTADOR:8081
 ```
 
-Para descobrir o endereço IPv4 do computador no Windows:
+Para descobrir o endereço IPv4 do computador no Windows, execute:
 
 ```cmd
 ipconfig
 ```
 
-Procure o **Endereço IPv4** do adaptador Wi-Fi.
+Procure o **Endereço IPv4** do adaptador Wi-Fi ativo.
 
-Caso a conexão LAN continue bloqueada, utilize:
+Substitua `IP_DO_COMPUTADOR` pelo endereço encontrado e abra a URL no navegador do celular.
+
+Esse teste ajuda a verificar se o dispositivo consegue alcançar a porta utilizada pelo servidor de desenvolvimento. Um resultado isolado, porém, não garante que todas as etapas de carregamento do aplicativo funcionarão.
+
+Caso a conexão LAN continue bloqueada, tente a alternativa de Tunnel:
 
 ```bash
-npm run start:tunnel
+npx expo start --tunnel ngrok
 ```
 
-### Rede Public e Private no Windows
+Esse comando é uma alternativa a testar; sua disponibilidade depende da configuração e do serviço de túnel.
 
-O Windows utiliza os perfis `Public` e `Private` para aplicar diferentes regras de rede e firewall.
+### Verificação do firewall e dos perfis de rede do Windows
+
+O Windows utiliza os perfis `Public` e `Private` para aplicar regras diferentes de rede e firewall.
 
 Em uma rede doméstica confiável, o perfil `Private` pode facilitar a comunicação entre dispositivos da rede local. Em redes públicas ou desconhecidas, mantenha o perfil `Public`.
 
 A alteração é feita somente no computador e não modifica a configuração do roteador ou do Wi-Fi para os demais dispositivos.
 
-Para verificar o perfil atual:
+Para verificar o perfil atual, execute o PowerShell como administrador quando necessário:
 
 ```powershell
 Get-NetConnectionProfile
@@ -170,20 +246,44 @@ Para retornar ao perfil `Public`:
 Set-NetConnectionProfile -InterfaceAlias "Wi-Fi" -NetworkCategory Public
 ```
 
-> **Importante:** não altere uma rede desconhecida ou pública para `Private` apenas para fazer o Expo funcionar.
+O nome da interface pode variar de acordo com a configuração do computador.
+
+> **Importante:** não altere uma rede desconhecida ou pública para `Private` apenas para fazer o Expo funcionar. Primeiro, confirme que a rede é confiável.
+
+---
+
+## Diagnóstico do projeto
+
+Para verificar se as dependências estão alinhadas com o SDK:
+
+```bash
+npx expo install --check
+```
+
+Para executar as verificações de configuração e compatibilidade:
+
+```bash
+npx expo-doctor
+```
+
+O `expo-doctor` realiza diversas verificações e pode precisar acessar serviços do Expo pela internet.
+
+Se aparecer um erro de conexão, como `ConnectTimeoutError`, isso não significa necessariamente que o código ou as dependências estejam incorretos. Verifique a conectividade e execute o diagnóstico novamente.
+
+Se uma verificação identificar uma incompatibilidade, analise a mensagem antes de modificar as dependências.
 
 ---
 
 ## Scripts disponíveis
 
-| Comando                | Descrição                         |
-| ---------------------- | --------------------------------- |
-| `npm start`            | Inicia o Expo pela rede local     |
-| `npm run start:tunnel` | Inicia o Expo utilizando Tunnel   |
-| `npm run android`      | Inicia o Expo com destino Android |
-| `npm run ios`          | Inicia o Expo com destino iOS     |
-| `npm run web`          | Executa a aplicação no navegador  |
-| `npm run lint`         | Executa o lint do projeto         |
+| Comando                | Descrição                                            |
+| ---------------------- | ---------------------------------------------------- |
+| `npm start`            | Inicia o Expo em modo padrão                         |
+| `npm run start:tunnel` | Inicia o Expo utilizando o Tunnel definido no script |
+| `npm run android`      | Inicia o Expo com destino Android                    |
+| `npm run ios`          | Inicia o Expo com destino iOS                        |
+| `npm run web`          | Executa a aplicação no navegador                     |
+| `npm run lint`         | Executa o lint do projeto                            |
 
 Para interromper o servidor de desenvolvimento:
 
@@ -198,26 +298,26 @@ Ctrl + C
 ```text
 ┌──────────────────────┐
 │    EduBlog Mobile    │
-│ React Native         │
-│ TypeScript           │
-│ Expo                 │
+│    React Native      │
+│    TypeScript        │
+│    Expo SDK 58       │
 └──────────┬───────────┘
            │
            ▼
-      Expo Go
+        Expo Go
            │
            ▼
-    Celular Android
+     Celular Android
            │
        ┌───┴───┐
        │       │
       LAN    Tunnel
        │       │
-       ▼       ▼
-   Computador / Expo
+       └───┬───┘
+           │
+           ▼
+    Computador / Expo
            │
            ▼
         API REST
 ```
-
-O aplicativo mobile funciona como cliente da API REST do EduBlog, reutilizando os endpoints já desenvolvidos pelo projeto.
