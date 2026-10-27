@@ -6,6 +6,8 @@ import { useApiClient } from "@/hooks/useApiClient";
 import { getAllPosts } from "@/services/postsService";
 import { useAuth } from "../../context/AuthContext";
 
+import { Link } from "expo-router";
+
 export default function HomeScreen() {
   const { user, logout } = useAuth();
   const { request } = useApiClient();
@@ -55,6 +57,12 @@ export default function HomeScreen() {
       <Text style={styles.text}>Usuário autenticado: {user?.name}</Text>
 
       <Text style={styles.text}>Perfil: {user?.role}</Text>
+
+      <Link href="/profile" asChild>
+        <Pressable style={styles.profileButton}>
+          <Text style={styles.profileButtonText}>Perfil</Text>
+        </Pressable>
+      </Link>
 
       <Pressable
         onPress={handleLogout}
@@ -108,5 +116,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#ffffff",
+  },
+
+  profileButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#BFD0E5",
+    backgroundColor: "#FFFFFF",
+  },
+
+  profileButtonText: {
+    color: "#183153",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
